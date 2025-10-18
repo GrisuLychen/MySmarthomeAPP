@@ -127,7 +127,7 @@
         function sendCommand(command) {
             if (window.Telegram && window.Telegram.WebApp) {
                 window.Telegram.WebApp.sendData(command); 
-                window.Telegram.WebApp.close(); 
+                /*window.Telegram.WebApp.close(); */
             } else {
                 console.error("Telegram WebApp SDK nicht geladen.");
                 // Wenn die Seite lokal geöffnet wird, ändere den Glühbirnen-Zustand
@@ -153,4 +153,5 @@
         } 
     </script>
 </body>
+
 </html>
