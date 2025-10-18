@@ -1,137 +1,21 @@
 <!DOCTYPE html>
 <html lang="de">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Smart Home Lichtsteuerung</title>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <style>
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh; 
-            margin: 0;
-            background-color: #f0f0f0;
-            color: #333;
-        }
-        .bulb {
-            width: 100px;
-            height: 100px;
-            background-color: #888;
-            border-radius: 50%;
-            margin-bottom: 30px;
-            position: relative;
-            box-shadow: 0 0 50px rgba(0, 0, 0, 0.2);
-            transition: all 0.3s ease-in-out;
-        }
-        .bulb::before {
-            content: '';
-            position: absolute;
-            bottom: -20px;
-            left: 35px;
-            width: 30px;
-            height: 20px;
-            background-color: #555;
-            border-radius: 0 0 5px 5px;
-        }
-        .bulb.on {
-            background-color: #ffe082;
-            box-shadow: 
-                0 0 10px #ffe082, 
-                0 0 30px #ffe082, 
-                0 0 50px #ffe082,
-                0 0 80px rgba(255, 224, 130, 0.8);
-        }
-        .switch-container {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            padding: 20px;
-            background-color: #fff;
-            border-radius: 10px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-        }
-        .switch {
-            position: relative;
-            display: inline-block;
-            width: 60px;
-            height: 34px;
-        }
-        .switch input { opacity: 0; width: 0; height: 0; }
-        .slider {
-            position: absolute;
-            cursor: pointer;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background-color: #ccc;
-            transition: 0.4s;
-            border-radius: 34px;
-        }
-        .slider:before {
-            position: absolute;
-            content: "";
-            height: 26px; width: 26px;
-            left: 4px; bottom: 4px;
-            background-color: white;
-            transition: 0.4s;
-            border-radius: 50%;
-        }
-        input:checked + .slider { background-color: #2196F3; }
-        input:checked + .slider:before { transform: translateX(26px); }
-    </style>
-</head>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
 <body>
-    <div class="bulb" id="lightBulb"></div>
-    <div class="switch-container">
-        <label for="lightSwitch">Lichtsteuerung</label>
-        <label class="switch">
-            <input type="checkbox" id="lightSwitch">
-            <span class="slider"></span>
-        </label>
-    </div>
-
-    <script>
-        const lightSwitch = document.getElementById('lightSwitch');
-        const lightBulb = document.getElementById('lightBulb');
-
-        function sendCommand(command) {
-            if (window.Telegram?.WebApp?.sendData) {
-                const payload = {
-                    cmd: command,
-                    ts: Date.now(),
-                    user: window.Telegram?.WebApp?.initDataUnsafe?.user || null
-                };
-                const str = JSON.stringify(payload);
-                try {
-                    console.log("Sende an Bot:", str);
-                    window.Telegram.WebApp.sendData(str);
-                 
-                } catch (err) {
-                    console.error("Fehler beim Senden an Telegram:", err);
-                }
-            } else {
-                console.warn("Telegram WebApp SDK nicht geladen. Lokaler Fallback.");
-                if (lightBulb) {
-                    lightBulb.classList.toggle('on', command === '!twa_lichtein');
-                }
-            }
-        }
-
-        lightSwitch.addEventListener('change', function() {
-            const command = this.checked ? '!twa_lichtein' : '!twa_lichtaus';
-            // Visuellen Zustand sofort ändern
-            lightBulb.classList.toggle('on', this.checked);
-            // Befehl senden
-            sendCommand(command);
-        });
-
-        // SDK initialisieren
-        if (window.Telegram?.WebApp?.ready) {
-            window.Telegram.WebApp.ready();
-        }
-    </script>
+  <h3>Test WebApp</h3>
+  <button id="btn">Sende Test an Bot</button>
+  <pre id="log" style="white-space:pre-wrap;background:#000;color:#0f0;padding:8px;"></pre>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <script>
+    const log = txt => { console.log(txt); document.getElementById('log').innerText += txt + "\n"; };
+    if (window.Telegram?.WebApp?.ready) { window.Telegram.WebApp.ready(); log("WebApp ready"); }
+    document.getElementById('btn').addEventListener('click', ()=> {
+      const payload = {cmd:"!twa_test", ts:Date.now(), user: window.Telegram?.WebApp?.initDataUnsafe?.user||null};
+      const s = JSON.stringify(payload);
+      log("Sende an Bot: " + s);
+      window.Telegram.WebApp.sendData(s);
+      // intentionally DO NOT close to see if update arrives
+    });
+  </script>
 </body>
 </html>
-
