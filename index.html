@@ -107,12 +107,7 @@
                 try {
                     console.log("Sende an Bot:", str);
                     window.Telegram.WebApp.sendData(str);
-                    // Kurzes Delay, damit sendData sicher ausgeführt wird bevor geschlossen wird
-                    setTimeout(() => {
-                        if (window.Telegram?.WebApp?.close) {
-                            window.Telegram.WebApp.close();
-                        }
-                    }, 300);
+                 
                 } catch (err) {
                     console.error("Fehler beim Senden an Telegram:", err);
                 }
@@ -139,3 +134,4 @@
     </script>
 </body>
 </html>
+
