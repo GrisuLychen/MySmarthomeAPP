@@ -12,14 +12,11 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            /* Wichtig: Höhe auf 100% setzen, damit Inhalte sichtbar werden */
             min-height: 100vh; 
             margin: 0;
             background-color: #f0f0f0;
             color: #333;
         }
-
-        /* Glühbirnen-Symbol (vereinfacht) */
         .bulb {
             width: 100px;
             height: 100px;
@@ -30,7 +27,6 @@
             box-shadow: 0 0 50px rgba(0, 0, 0, 0.2);
             transition: all 0.3s ease-in-out;
         }
-
         .bulb::before {
             content: '';
             position: absolute;
@@ -41,18 +37,14 @@
             background-color: #555;
             border-radius: 0 0 5px 5px;
         }
-
-        /* Zustand: LICHT AN */
         .bulb.on {
-            background-color: #ffe082; /* Gelblich-hell */
+            background-color: #ffe082;
             box-shadow: 
                 0 0 10px #ffe082, 
                 0 0 30px #ffe082, 
                 0 0 50px #ffe082,
-                0 0 80px rgba(255, 224, 130, 0.8); /* Leuchteffekt */
+                0 0 80px rgba(255, 224, 130, 0.8);
         }
-
-        /* Schalter-Styling */
         .switch-container {
             display: flex;
             align-items: center;
@@ -62,55 +54,35 @@
             border-radius: 10px;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
         }
-
         .switch {
             position: relative;
             display: inline-block;
             width: 60px;
             height: 34px;
         }
-
-        .switch input {
-            opacity: 0;
-            width: 0;
-            height: 0;
-        }
-
+        .switch input { opacity: 0; width: 0; height: 0; }
         .slider {
             position: absolute;
             cursor: pointer;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
+            top: 0; left: 0; right: 0; bottom: 0;
             background-color: #ccc;
             transition: 0.4s;
             border-radius: 34px;
         }
-
         .slider:before {
             position: absolute;
             content: "";
-            height: 26px;
-            width: 26px;
-            left: 4px;
-            bottom: 4px;
+            height: 26px; width: 26px;
+            left: 4px; bottom: 4px;
             background-color: white;
             transition: 0.4s;
             border-radius: 50%;
         }
-
-        input:checked + .slider {
-            background-color: #2196F3;
-        }
-
-        input:checked + .slider:before {
-            transform: translateX(26px);
-        }
+        input:checked + .slider { background-color: #2196F3; }
+        input:checked + .slider:before { transform: translateX(26px); }
     </style>
 </head>
 <body>
-
     <div class="bulb" id="lightBulb"></div>
     <div class="switch-container">
         <label for="lightSwitch">Lichtsteuerung</label>
@@ -125,35 +97,45 @@
         const lightBulb = document.getElementById('lightBulb');
 
         function sendCommand(command) {
-            if (window.Telegram && window.Telegram.WebApp) {
-                window.Telegram.WebApp.sendData(command); 
-                /*window.Telegram.WebApp.close(); */
-                window.Telegram.WebApp.close();
+            if (window.Telegram?.WebApp?.sendData) {
+                const payload = {
+                    cmd: command,
+                    ts: Date.now(),
+                    user: window.Telegram?.WebApp?.initDataUnsafe?.user || null
+                };
+                const str = JSON.stringify(payload);
+                try {
+                    console.log("Sende an Bot:", str);
+                    window.Telegram.WebApp.sendData(str);
+                    // Kurzes Delay, damit sendData sicher ausgeführt wird bevor geschlossen wird
+                    setTimeout(() => {
+                        if (window.Telegram?.WebApp?.close) {
+                            window.Telegram.WebApp.close();
+                        }
+                    }, 300);
+                } catch (err) {
+                    console.error("Fehler beim Senden an Telegram:", err);
+                }
             } else {
-                console.error("Telegram WebApp SDK nicht geladen.");
-                // Wenn die Seite lokal geöffnet wird, ändere den Glühbirnen-Zustand
+                console.warn("Telegram WebApp SDK nicht geladen. Lokaler Fallback.");
                 if (lightBulb) {
-                     lightBulb.classList.toggle('on', command === '!twa_lichtein');
+                    lightBulb.classList.toggle('on', command === '!twa_lichtein');
                 }
             }
         }
 
         lightSwitch.addEventListener('change', function() {
-            let command = this.checked ? '!twa_lichtein' : '!twa_lichtaus';
-            
-            // Visuellen Zustand sofort ändern (auch wenn sendCommand fehlschlägt)
+            const command = this.checked ? '!twa_lichtein' : '!twa_lichtaus';
+            // Visuellen Zustand sofort ändern
             lightBulb.classList.toggle('on', this.checked);
-            
             // Befehl senden
             sendCommand(command);
         });
-        
-        // Initialisierung des Telegram Web App SDK
-        if (window.Telegram && window.Telegram.WebApp) {
-             window.Telegram.WebApp.ready();
-        } 
+
+        // SDK initialisieren
+        if (window.Telegram?.WebApp?.ready) {
+            window.Telegram.WebApp.ready();
+        }
     </script>
 </body>
-
 </html>
-
