@@ -13,9 +13,10 @@
       const payload = {cmd:"!twa_test", ts:Date.now(), user: window.Telegram?.WebApp?.initDataUnsafe?.user||null};
       const s = JSON.stringify(payload);
       log("Sende an Bot: " + s);
-      window.Telegram.WebApp.sendData(s);
+      window.Telegram.WebApp.sendData("Testnachricht");
       // intentionally DO NOT close to see if update arrives
     });
   </script>
 </body>
 </html>
+
