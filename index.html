@@ -1,55 +1,226 @@
-<script>
-    // Mapping der Lampen-IDs zu ihren Befehlspräfixen
-    const LIGHTS = {
-        'decke': 'decke',
-        'backlight': 'backlight',
-        'video': 'video'
-    };
-
-    // Funktion, die den Befehl an den Telegram Bot sendet
-    function sendCommand(command) {
-        if (window.Telegram && window.Telegram.WebApp) {
-            // Sende die Daten an den Bot (Der Client sollte nun entscheiden, ob er die App schließt)
-            window.Telegram.WebApp.sendData(command); 
-            
-            // WICHTIG: window.Telegram.WebApp.close(); wurde hier entfernt.
-        } else {
-            console.error("Telegram WebApp SDK nicht geladen oder private Umgebung.");
-            alert(`Simuliere Befehl: ${command}`);
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Home Steuerung</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            /* Hintergrundfarbe an Telegram-Theme anpassen */
+            background-color: var(--tg-theme-bg-color, #f0f0f0); 
+            color: var(--tg-theme-text-color, #333);
+            padding: 20px;
         }
-    }
+        .section {
+            width: 100%;
+            max-width: 400px;
+            margin-bottom: 30px;
+            padding: 15px;
+            background-color: var(--tg-theme-secondary-bg-color, #fff);
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        .section h2 {
+            font-size: 1.2em;
+            margin-top: 0;
+            margin-bottom: 15px;
+            border-bottom: 1px solid var(--tg-theme-separator-color, #ccc);
+            padding-bottom: 5px;
+        }
+        .control-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid #eee;
+        }
+        .control-row:last-child {
+            border-bottom: none;
+        }
+        .label {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-grow: 1;
+        }
+        /* Glühbirnen-Symbol (vereinfacht) */
+        .bulb {
+            width: 25px;
+            height: 25px;
+            background-color: #888;
+            border-radius: 50%;
+            transition: background-color 0.3s ease-in-out;
+            box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
+        }
+        .bulb.on {
+            background-color: #ffe082; /* Gelblich-hell */
+            box-shadow: 0 0 8px #ffe082;
+        }
+        /* Schalter-Styling (vereinfacht) */
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 40px;
+            height: 20px;
+        }
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: 0.4s;
+            border-radius: 10px;
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 2px;
+            bottom: 2px;
+            background-color: white;
+            transition: 0.4s;
+            border-radius: 50%;
+        }
+        input:checked + .slider {
+            background-color: #2196F3;
+        }
+        input:checked + .slider:before {
+            transform: translateX(20px);
+        }
+        /* Rollo Buttons */
+        .roller-buttons {
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+            padding-top: 10px;
+        }
+        .roller-buttons button {
+            padding: 10px;
+            flex-grow: 1;
+            border: none;
+            border-radius: 6px;
+            background-color: var(--tg-theme-button-color, #0088cc);
+            color: var(--tg-theme-button-text-color, #fff);
+            font-size: 0.9em;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .roller-buttons button:active {
+            filter: brightness(0.9);
+        }
+    </style>
+</head>
+<body>
 
-    // --- 1. Event-Listener für Lampenschalter ---
-    for (const id in LIGHTS) {
-        const switchElement = document.getElementById(`switch_${id}`);
-        const bulbElement = document.getElementById(`bulb_${id}`);
+    <div class="section" id="lightSection">
+        <h2>💡 Lichtsteuerung</h2>
+        
+        <div class="control-row">
+            <div class="label">
+                <div class="bulb" id="bulb_decke"></div>
+                <span>Decke</span>
+            </div>
+            <label class="switch">
+                <input type="checkbox" id="switch_decke">
+                <span class="slider"></span>
+            </label>
+        </div>
+        
+        <div class="control-row">
+            <div class="label">
+                <div class="bulb" id="bulb_backlight"></div>
+                <span>Backlight</span>
+            </div>
+            <label class="switch">
+                <input type="checkbox" id="switch_backlight">
+                <span class="slider"></span>
+            </label>
+        </div>
+        
+        <div class="control-row">
+            <div class="label">
+                <div class="bulb" id="bulb_video"></div>
+                <span>Video</span>
+            </div>
+            <label class="switch">
+                <input type="checkbox" id="switch_video">
+                <span class="slider"></span>
+            </label>
+        </div>
+    </div>
 
-        if (switchElement && bulbElement) {
-            switchElement.addEventListener('change', function() {
-                const action = this.checked ? 'ein' : 'aus';
-                const command = `!twa_${LIGHTS[id]}_${action}`;
-                
-                // Visuellen Zustand der Glühbirne anpassen
-                bulbElement.classList.toggle('on', this.checked);
-                
+    <div class="section" id="rollerSection">
+        <h2>🪟 Rollo Steuerung</h2>
+        <div class="roller-buttons">
+            <button data-command="!twa_rollo_0">0% (Offen)</button>
+            <button data-command="!twa_rollo_80">80% (Halb)</button>
+            <button data-command="!twa_rollo_100">100% (Zu)</button>
+        </div>
+    </div>
+
+    <script>
+        // Mapping der Lampen-IDs zu ihren Befehlspräfixen
+        const LIGHTS = {
+            'decke': 'decke',
+            'backlight': 'backlight',
+            'video': 'video'
+        };
+
+        // Funktion, die den Befehl an den Telegram Bot sendet und die App schließt
+        function sendCommand(command) {
+            if (window.Telegram && window.Telegram.WebApp) {
+                window.Telegram.WebApp.sendData(command); 
+            } else {
+                console.error("Telegram WebApp SDK nicht geladen oder private Umgebung.");
+                alert(`Simuliere Befehl: ${command}`);
+            }
+        }
+
+        // --- 1. Event-Listener für Lampenschalter ---
+        for (const id in LIGHTS) {
+            const switchElement = document.getElementById(`switch_${id}`);
+            const bulbElement = document.getElementById(`bulb_${id}`);
+
+            if (switchElement && bulbElement) {
+                switchElement.addEventListener('change', function() {
+                    const action = this.checked ? 'ein' : 'aus';
+                    const command = `!twa_${LIGHTS[id]}_${action}`;
+                    
+                    // Visuellen Zustand der Glühbirne anpassen
+                    bulbElement.classList.toggle('on', this.checked);
+                    
+                    sendCommand(command);
+                });
+            }
+        }
+
+        // --- 2. Event-Listener für Rollo Buttons ---
+        const rollerButtons = document.querySelectorAll('#rollerSection button');
+        rollerButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const command = this.getAttribute('data-command');
                 sendCommand(command);
             });
-        }
-    }
-
-    // --- 2. Event-Listener für Rollo Buttons ---
-    const rollerButtons = document.querySelectorAll('#rollerSection button');
-    rollerButtons.forEach(button => {
-        button.addEventListener('click', function() {
-            const command = this.getAttribute('data-command');
-            sendCommand(command);
         });
-    });
 
-    // --- 3. TWA Initialisierung ---
-    if (window.Telegram && window.Telegram.WebApp) {
-         window.Telegram.WebApp.ready();
-    } 
-</script>
-
-
+        // --- 3. TWA Initialisierung ---
+        if (window.Telegram && window.Telegram.WebApp) {
+             window.Telegram.WebApp.ready();
+        } 
+    </script>
+</body>
+</html>
