@@ -1,22 +1,55 @@
-<!DOCTYPE html>
-<html lang="de">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
-<body>
-  <h3>Test WebApp</h3>
-  <button id="btn">Sende Test an Bot</button>
-  <pre id="log" style="white-space:pre-wrap;background:#000;color:#0f0;padding:8px;"></pre>
-  <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <script>
-    const log = txt => { console.log(txt); document.getElementById('log').innerText += txt + "\n"; };
-    if (window.Telegram?.WebApp?.ready) { window.Telegram.WebApp.ready(); log("WebApp ready"); }
-    document.getElementById('btn').addEventListener('click', ()=> {
-      const payload = {cmd:"!twa_test", ts:Date.now(), user: window.Telegram?.WebApp?.initDataUnsafe?.user||null};
-      const s = JSON.stringify(payload);
-      log("Sende an Bot: " + s);
-      window.Telegram.WebApp.sendData("Testnachricht");
-      // intentionally DO NOT close to see if update arrives
+<script>
+    // Mapping der Lampen-IDs zu ihren Befehlspräfixen
+    const LIGHTS = {
+        'decke': 'decke',
+        'backlight': 'backlight',
+        'video': 'video'
+    };
+
+    // Funktion, die den Befehl an den Telegram Bot sendet
+    function sendCommand(command) {
+        if (window.Telegram && window.Telegram.WebApp) {
+            // Sende die Daten an den Bot (Der Client sollte nun entscheiden, ob er die App schließt)
+            window.Telegram.WebApp.sendData(command); 
+            
+            // WICHTIG: window.Telegram.WebApp.close(); wurde hier entfernt.
+        } else {
+            console.error("Telegram WebApp SDK nicht geladen oder private Umgebung.");
+            alert(`Simuliere Befehl: ${command}`);
+        }
+    }
+
+    // --- 1. Event-Listener für Lampenschalter ---
+    for (const id in LIGHTS) {
+        const switchElement = document.getElementById(`switch_${id}`);
+        const bulbElement = document.getElementById(`bulb_${id}`);
+
+        if (switchElement && bulbElement) {
+            switchElement.addEventListener('change', function() {
+                const action = this.checked ? 'ein' : 'aus';
+                const command = `!twa_${LIGHTS[id]}_${action}`;
+                
+                // Visuellen Zustand der Glühbirne anpassen
+                bulbElement.classList.toggle('on', this.checked);
+                
+                sendCommand(command);
+            });
+        }
+    }
+
+    // --- 2. Event-Listener für Rollo Buttons ---
+    const rollerButtons = document.querySelectorAll('#rollerSection button');
+    rollerButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const command = this.getAttribute('data-command');
+            sendCommand(command);
+        });
     });
-  </script>
-</body>
-</html>
+
+    // --- 3. TWA Initialisierung ---
+    if (window.Telegram && window.Telegram.WebApp) {
+         window.Telegram.WebApp.ready();
+    } 
+</script>
+
 
